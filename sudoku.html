@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Solver</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #f0f2f5; margin: 0; }
+        h1 { color: #1a73e8; }
+        #grid { display: grid; grid-template-columns: repeat(9, 40px); grid-template-rows: repeat(9, 40px); gap: 1px; background: #333; border: 2px solid #333; }
+        input { width: 40px; height: 40px; text-align: center; font-size: 20px; border: none; outline: none; background: #fff; color: #1a73e8; }
+        input:disabled { background: #e8eaed; color: #3c4043; cursor: default; }
+        .b-r { border-right: 2px solid #333; }
+        .b-b { border-bottom: 2px solid #333; }
+        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border: none; border-radius: 4px; color: #fff; transition: opacity 0.2s; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        #solve { background: #1a73e8; }
+        #gen { background: #34a853; }
+        #clear { background: #ea4335; }
+        #msg { margin-top: 10px; color: #ea4335; font-weight: bold; height: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Sudoku Solver</h1>
+    <div id="grid"></div>
+    <div class="controls">
+        <button id="solve">Solve</button>
+        <button id="gen">Generate</button>
+        <button id="clear">Clear</button>
+    </div>
+    <div id="msg"></div>
+    <script>
+        const gridDiv = document.getElementById('grid');
+        const solveBtn = document.getElementById('solve');
+        const genBtn = document.getElementById('gen');
+        const clearBtn = document.getElementById('clear');
+        const msgDiv = document.getElementById('msg');
+        let inputs = [];
+        let solving = false;
+        let stop = false;
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = 1;
+                if ((c + 1) % 3 === 0 && c !== 8) input.classList.add('b-r');
+                if ((r + 1) % 3 === 0 && r !== 8) input.classList.add('b-b');
+                input.oninput = (e) => { if (!/^[1-9]$/.test(e.target.value)) e.target.value = ''; };
+                gridDiv.appendChild(input);
+                inputs.push(input);
+            }
+        }
+        const getGrid = () => {
+            const g = [];
+            for (let i = 0; i < 9; i++) g.push(inputs.slice(i * 9, i * 9 + 9).map(input => input.value ? parseInt(input.value) : null));
+            return g;
+        };
+        const setGrid = (g) => {
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) inputs[r * 9 + c].value = g[r][c] || '';
+        };
+        const isValid = (g, r, c, n) => {
+            for (let x = 0; x < 9; x++) if (g[r][x] === n && x !== c) return false;
+            for (let x = 0; x < 9; x++) if (g[x][c] === n && x !== r) return false;
+            let sr = r - (r % 3), sc = c - (c % 3);
+            for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (g[i + sr][j + sc] === n && (i + sr !== r || j + sc !== c)) return false;
+            return true;
+        };
+        const validateAll = (g) => {
+            for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (g[r][c] !== null && !isValid(g, r, c, g[r][c])) return false;
+            return true;
+        };
+        solveBtn.onclick = async () => {
+            if (solving) { stop = true; return; }
+            const g = getGrid();
+            if (!validateAll(g)) { msgDiv.innerText = 'Invalid puzzle'; return; }
+            msgDiv.innerText = '';
+            solving = true;
+            stop = false;
+            solveBtn.innerText = 'Stop';
+            genBtn.disabled = true;
+            clearBtn.disabled = true;
+            inputs.forEach(i => i.disabled = true);
+            const run = async () => {
+                if (stop) return false;
+                let r = -1, c = -1;
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) if (g[i][j] === null) { r = i; c = j; break; }
+                    if (r !== -1) break;
+                }
+                if (r === -1) return true;
+                for (let n = 1; n <= 9; n++) {
+                    if (stop) return false;
+                    if (isValid(g, r, c, n)) {
+                        g[r][c] = n;
+                        inputs[r * 9 + c].value = n;
+                        await new Promise(res => setTimeout(res, 10));
+                        if (await run()) return true;
+                        g[r][c] = null;
+                        inputs[r * 9 + c].value = '';
+                        await new Promise(res => setTimeout(res, 10));
+                    }
+                }
+                return false;
+            };
+            if (await run()) msgDiv.innerText = '';
+            else if (!stop) msgDiv.innerText = 'No solution';
+            solving = false;
+            solveBtn.innerText = 'Solve';
+            genBtn.disabled = false;
+            clearBtn.disabled = false;
+            inputs.forEach(input => input.disabled = false);
+        };
+        genBtn.onclick = () => {
+            const g = Array(9).fill(null).map(() => Array(9).fill(null));
+            const fill = (gr) => {
+                let r = -1, c = -1;
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) if (gr[i][j] === null) { r = i; c = j; break; }
+                    if (r !== -1) break;
+                }
+                if (r === -1) return true;
+                const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5);
+                for (const n of nums) {
+                    if (isValid(gr, r, c, n)) {
+                        gr[r][c] = n;
+                        if (fill(gr)) return true;
+                        gr[r][c] = null;
+                    }
+                }
+                return false;
+            };
+            fill(g);
+            for (let i = 0; i < 50; i++) g[Math.floor(Math.random() * 9)][Math.floor(Math.random() * 9)] = null;
+            setGrid(g);
+            msgDiv.innerText = '';
+        };
+        clearBtn.onclick = () => {
+            inputs.forEach(i => { i.value = ''; i.disabled = false; });
+            msgDiv.innerText = '';
+        };
+    </script>
+</body>
+</html>

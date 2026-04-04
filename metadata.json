@@ -1,0 +1,5 @@
+{
+  "name": "Sudoku Master Solver",
+  "description": "An interactive Sudoku solver and generator that visualizes the backtracking algorithm, designed to teach logical problem-solving.",
+  "requestFramePermissions": []
+}
