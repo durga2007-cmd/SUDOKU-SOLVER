@@ -229,15 +229,6 @@ export default function App() {
               </button>
             </div>
           </div>
-
-          <div className="bg-indigo-500/5 border border-indigo-500/10 p-6 rounded-3xl">
-            <h3 className="text-indigo-400 font-bold text-sm mb-3 flex items-center gap-2">
-              <Trophy className="w-4 h-4" /> SDG 4 Goal
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Promoting computational thinking and logical problem-solving skills through interactive algorithmic visualization.
-            </p>
-          </div>
         </motion.div>
 
         {/* Center Panel: Grid */}
